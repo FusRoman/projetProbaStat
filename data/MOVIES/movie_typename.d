@@ -1,0 +1,10 @@
+Action
+Animation
+Art_Foreign
+Classic
+Comedy
+Drama
+Family
+Horror
+Romance
+Thriller
