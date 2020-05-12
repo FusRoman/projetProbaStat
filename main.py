@@ -31,7 +31,7 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
             sCi = np.multiply(np.sum(np.multiply(Pci, similarity_matrix[:, i]), axis = 1), np.divide(Pc, Pi))
             
             
-            #zone non optimisé du cul
+            #zone non optimisé du cul | tu t'y connais bien en anatomie ?
             #calcul de la double somme s(C)
             sC = np.empty(Nc)
             for C in range(Nc):
@@ -46,7 +46,7 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
             #fin de la zone non optimisé du cul
             
             # calcul la première ligne de la boucle for du pseudo_code 
-            newPci = np.multiply(np.exp(np.divide(np.subtract(np.multiply(sCi, 2), sC), 1/T)), Pc)
+            newPci = np.multiply(np.exp(np.divide(np.subtract(np.multiply(sCi, 2), sC), T)), Pc)
             
             Pci[:, i] = newPci
             
