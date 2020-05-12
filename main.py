@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # T : tradeoff parameter // tradeoff between energy and entropy like terms
 
 
-
+#génére P(C|i) à m = 0
 def init_prob(nbData, nbCluster):
     t = np.random.sample( (nbCluster, nbData) )
     return np.apply_along_axis(lambda a : np.divide(a, np.sum(a)), axis=1, arr=t)
@@ -20,10 +20,14 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
         lastPci = np.copy(Pci)
         
         for i in range(nbData):
-            Pi = 1/5
             
+            #calcul p(i), comme il ont tous la même proba, c'est juste i/N
+            Pi = 1/nbData
+            
+            #calcul P(C) pour tout C
             Pc = np.sum(Pci, axis = 1) * Pi
             
+            #calcul s^(m)(C;i) pour tout C
             sCi = np.multiply(np.sum(np.multiply(Pci, similarity_matrix[:, i]), axis = 1), np.divide(Pc, Pi))
             
             
@@ -41,16 +45,18 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
                 sC[C] = total
             #fin de la zone non optimisé du cul
             
+            # calcul la première ligne de la boucle for du pseudo_code 
             newPci = np.multiply(np.exp(np.divide(np.subtract(np.multiply(sCi, 2), sC), 1/T)), Pc)
             
             Pci[:, i] = newPci
             
             
-            
+            #calcul la deuxième ligne de la boucle for du pseudo-code
             newPci = np.divide(Pci[:,i], np.sum(Pci[:, i]))
             
             Pci[:, i] = newPci
-            
+        
+        #test si toute nos valeurs sont inférieur à epsilon
         if np.all(np.less_equal(np.abs(np.subtract(Pci, lastPci)), epsilon)):
                 break
 
