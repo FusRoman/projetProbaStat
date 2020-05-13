@@ -17,7 +17,7 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
     nbData = np.shape(similarity_matrix)[0]
     Pci = init_prob(nbData, Nc)
 
-    #calcul p(i), comme il ont tous la même proba, c'est juste i/N
+    #calcul p(i), comme les données ont toute la même proba, c'est juste i/N
     Pi = 1/nbData
     
     m = 0
@@ -26,36 +26,31 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
         lastPci = np.copy(Pci)
         
         print("step : ", m)
-        t = time.clock()
         for i in range(nbData):
             
             #calcul P(C) pour tout C
             Pc = np.sum(Pci, axis = 1) * Pi
-            
-         
-            #calcul s^(m)(C;i) pour tout C
-            sCi = np.multiply(np.sum(np.multiply(Pci, similarity_matrix[:, i]), axis = 1), np.divide(Pi, Pc))
 
-            #zone non optimisé du cul | tu t'y connais bien en anatomie ?
-            #calcul de la double somme s(C)
-            sC = np.empty(Nc)
-            for C in range(Nc):
-                total = 0
-                factor = Pi / Pc[C]
-                for k in range(nbData):
-                    tmpTot = 0
-                    for l in range(nbData):
-                        tmpTot += (Pci[C,k] * factor) * (Pci[C,l] * factor) * similarity_matrix[k,l]
-                    total += tmpTot
-                sC[C] = total
-            #fin de la zone non optimisé du cul
-           
-           
+            bayesFactor = np.divide(Pi, Pc)
+            
+            #calcul s^(m)(C;i) pour tout C
+            sCi = np.multiply(np.sum(np.multiply(Pci, similarity_matrix[:, i]), axis = 1), bayesFactor)
+
+            
+            squareFactor = np.power(bayesFactor, 2)
+            
+            #calcul s^(m)(C) pour tous C, pour tous l appartenant à range(nbData)
+            sC = np.zeros(Nc)
+            for k in range(nbData):
+                tmp =  np.multiply(np.multiply(squareFactor,Pci[:,k]), np.multiply(Pci,similarity_matrix[k,:]).T)
+                tmp2 =  np.sum(tmp, axis = 0)
+                sC = np.add(tmp2, sC)
+            
+            
             # calcul la première ligne de la boucle for du pseudo_code 
             newPci = np.multiply(np.exp(np.divide(np.subtract(np.multiply(sCi, 2), sC), T)), Pc)
             
             Pci[:, i] = newPci
-            
             
             #calcul la deuxième ligne de la boucle for du pseudo-code
             newPci = np.divide(Pci[:,i], np.sum(Pci[:, i]))
@@ -63,12 +58,12 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
             
             Pci[:, i] = newPci
         
-        print("total time to watch all data : ", time.clock() - t)
-        
         m += 1
         
+        test = np.less_equal(np.abs(np.subtract(Pci, lastPci)), epsilon)
+        
         #test si toute nos valeurs sont inférieur à epsilon
-        if np.all(np.less_equal(np.abs(np.subtract(Pci, lastPci)), epsilon)):
+        if np.all(test):
                 break
 
     return Pci
@@ -77,13 +72,15 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
 
 s = np.genfromtxt("data/DS1/simil_ds1.d")
 
-#bug : l'algo ne converge pas
-#bug 2 : warning python ligne 50 -> RuntimeWarning: invalid value encountered in true_divide
-res = gen_cluster(s, 3)                
+res = gen_cluster(s, 3, T = 3)                
 
-for i in range(3):
-    print(res[:, i])
+cluster = []
+
+for i in range(np.shape(s)[0]):
+    print("data : ", i)
+    print("cluster trouvé : ", np.argmax(res[:, i]))
     print()
+
 
 #show result data
 """
