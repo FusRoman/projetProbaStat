@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 # N : number of data
 # Nc : requested number of cluster
@@ -16,35 +17,40 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
     nbData = np.shape(similarity_matrix)[0]
     Pci = init_prob(nbData, Nc)
 
+    #calcul p(i), comme il ont tous la même proba, c'est juste i/N
+    Pi = 1/nbData
+    
+    m = 0
+
     while True:
         lastPci = np.copy(Pci)
         
+        print("step : ", m)
+        t = time.clock()
         for i in range(nbData):
-            
-            #calcul p(i), comme il ont tous la même proba, c'est juste i/N
-            Pi = 1/nbData
             
             #calcul P(C) pour tout C
             Pc = np.sum(Pci, axis = 1) * Pi
             
+         
             #calcul s^(m)(C;i) pour tout C
-            sCi = np.multiply(np.sum(np.multiply(Pci, similarity_matrix[:, i]), axis = 1), np.divide(Pc, Pi))
-            
-            
+            sCi = np.multiply(np.sum(np.multiply(Pci, similarity_matrix[:, i]), axis = 1), np.divide(Pi, Pc))
+
             #zone non optimisé du cul | tu t'y connais bien en anatomie ?
             #calcul de la double somme s(C)
             sC = np.empty(Nc)
             for C in range(Nc):
                 total = 0
+                factor = Pi / Pc[C]
                 for k in range(nbData):
                     tmpTot = 0
                     for l in range(nbData):
-                        factor = Pi / Pc[C]
                         tmpTot += (Pci[C,k] * factor) * (Pci[C,l] * factor) * similarity_matrix[k,l]
                     total += tmpTot
                 sC[C] = total
             #fin de la zone non optimisé du cul
-            
+           
+           
             # calcul la première ligne de la boucle for du pseudo_code 
             newPci = np.multiply(np.exp(np.divide(np.subtract(np.multiply(sCi, 2), sC), T)), Pc)
             
@@ -54,7 +60,12 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
             #calcul la deuxième ligne de la boucle for du pseudo-code
             newPci = np.divide(Pci[:,i], np.sum(Pci[:, i]))
             
+            
             Pci[:, i] = newPci
+        
+        print("total time to watch all data : ", time.clock() - t)
+        
+        m += 1
         
         #test si toute nos valeurs sont inférieur à epsilon
         if np.all(np.less_equal(np.abs(np.subtract(Pci, lastPci)), epsilon)):
