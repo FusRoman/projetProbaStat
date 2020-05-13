@@ -13,7 +13,7 @@ def init_prob(nbData, nbCluster):
     t = np.random.sample( (nbCluster, nbData) )
     return np.apply_along_axis(lambda a : np.divide(a, np.sum(a)), axis=1, arr=t)
 
-def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
+def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001, debug=False):
     nbData = np.shape(similarity_matrix)[0]
     Pci = init_prob(nbData, Nc)
 
@@ -25,7 +25,6 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
     while True:
         lastPci = np.copy(Pci)
         
-        print("step : ", m)
         for i in range(nbData):
             
             #calcul P(C) pour tout C
@@ -57,10 +56,12 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
             
             
             Pci[:, i] = newPci
+        tmp = np.abs(np.subtract(Pci, lastPci))
+        if(debug):
+            print("step :", m, "   max error :", np.max(tmp))
+        test = np.less_equal(tmp, epsilon)
         
-        m += 1
-        
-        test = np.less_equal(np.abs(np.subtract(Pci, lastPci)), epsilon)
+        m+=1
         
         #test si toute nos valeurs sont inférieur à epsilon
         if np.all(test):
@@ -72,18 +73,17 @@ def gen_cluster(similarity_matrix, Nc, T=2, epsilon=0.0001):
 
 s = np.genfromtxt("data/DS1/simil_ds1.d")
 
-res = gen_cluster(s, 3, T = 3)                
+res = gen_cluster(s, 3, T = 0.3, epsilon=0.01)                
 
 cluster = []
 
-for i in range(np.shape(s)[0]):
-    print("data : ", i)
-    print("cluster trouvé : ", np.argmax(res[:, i]))
-    print()
+#for i in range(np.shape(s)[0]):
+#    print("data : ", i)
+ #   print("cluster trouvé : ", np.argmax(res[:, i]))
+  #  print()
 
 
 #show result data
-"""
 s = np.loadtxt("data/DS1/scatter_ds1.d")
 
 mapColor = {
@@ -96,4 +96,19 @@ labelColor = [mapColor[l] for l in s[:,2]]
 
 plt.scatter(s[:,0],s[:,1], c=labelColor)
 plt.show()
-"""
+
+labelColor2 = [mapColor[l] for l in np.argmax(res, axis=0)]
+plt.scatter(s[:,0],s[:,1], c=labelColor2)
+plt.show()
+
+# DS2
+print("DS2 test")
+
+s = np.genfromtxt("data/DS2/simil_ds2.d")
+res = gen_cluster(s, 5, T = 0.3, epsilon=0.01, debug=True)
+
+# Je pense pas que ce soit vraiment la meilleure représentation, mais je sais pas quoi d'autre faire, parce qu'on a pas de scatter_ds2.d :P
+# Je sais pas comment on pourrait faire pour vérifier que le nombre de clusters est correct
+# Mais au moins faire un scatter plot de la matrice de similarité n'est sûrement pas correct XD
+plt.scatter(s[:,0],s[:,1], c=np.argmax(res, axis=0))
+plt.show()
